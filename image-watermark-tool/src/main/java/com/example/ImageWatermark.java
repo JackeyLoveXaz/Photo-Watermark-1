@@ -121,13 +121,32 @@ public class ImageWatermark {
     }
 
     private static void saveWatermarkedImage(BufferedImage image, File originalFile) throws IOException {
-        String originalPath = originalFile.getAbsolutePath();
-        String watermarkDirPath = originalPath.substring(0, originalPath.lastIndexOf(File.separator)) + File.separator + originalFile.getName().replace(".jpg", "") + "_watermark";
-        new File(watermarkDirPath).mkdirs();
-        
-        File watermarkedImageFile = new File(watermarkDirPath, originalFile.getName());
-        ImageIO.write(image, "jpg", watermarkedImageFile);
-        System.out.println("Watermarked image saved to: " + watermarkedImageFile.getAbsolutePath());
+        // 获取原图片所在的目录（父目录）
+        File parentDir = originalFile.getParentFile();
+        if (parentDir == null) {
+            throw new IOException("无法获取原图片的所在目录");
+        }
+
+        // 构建新目录路径：原目录名 + "_watermark"（作为原目录的子目录）
+        String parentDirPath = parentDir.getAbsolutePath();
+        String watermarkDirPath = parentDirPath + File.separator + parentDir.getName() + "_watermark";
+
+        // 创建新目录（如果不存在）
+        File watermarkDir = new File(watermarkDirPath);
+        if (!watermarkDir.exists() && !watermarkDir.mkdirs()) {
+            throw new IOException("无法创建水印目录: " + watermarkDirPath);
+        }
+
+        // 保存水印图片（文件名与原文件相同）
+        File watermarkedImageFile = new File(watermarkDir, originalFile.getName());
+        String fileExtension = originalFile.getName().substring(originalFile.getName().lastIndexOf(".") + 1);
+
+        // 保持原文件格式（不再强制转为jpg）
+        if (!ImageIO.write(image, fileExtension, watermarkedImageFile)) {
+            throw new IOException("不支持的图片格式: " + fileExtension);
+        }
+
+        System.out.println("水印图片已保存至: " + watermarkedImageFile.getAbsolutePath());
     }
 
     private static Color getColor(String colorName) {
